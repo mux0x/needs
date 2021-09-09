@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 import ssl, socket , argparse 
-import signal
 from termcolor import colored
 import sys
-import time
 import threading
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", help="domains file")
