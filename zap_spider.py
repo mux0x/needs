@@ -33,6 +33,7 @@ def logo():
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--site", help="single url to spider")
+parser.add_argument("-S", "--sites", help="file contains list of urls to spider")
 parser.add_argument("-a", "--apikey", help="zap proxy api key")
 parser.add_argument("-p", "--port", help="port that zap proxy is using")
 parser.add_argument("-o", "--output", help="output file")
