@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#script by mux0x
+# script by mux0x
 import exurl
 import requests
 from termcolor import colored
@@ -46,12 +46,14 @@ user_agent_random =random.choice(user_agents)
 def injecting():
     urls_list = tuple(open(args.list, 'r'))
     payloads_list = tuple(open(args.payloads, 'r'))
-    splilitted_urls = []
     for ind,payload in enumerate(payloads_list):
         locals()["listurls" + str(ind)] = exurl.split_urls(urls_list, payload)
-        splilitted_urls.extend(locals()["listurls" + str(ind)])
-    return splilitted_urls
-
+        with open('lfi_output', 'a') as f:
+            for item in locals()["listurls" + str(ind)]:
+                f.write("%s\n" % item)
+                locals()["listurls" + str(ind)] = None
+    urls_list = None
+    payloads_list = None
 def send_request(line):
     line = line.rstrip()
     headers = {"User-Agent": str(user_agent_random)}
@@ -60,18 +62,21 @@ def send_request(line):
         content = r.content
         if b"root:x" in content:
             print(colored("\n\n[+] Vulnerable :> ", 'red') + line + "\n")
-            f = open(args.output, "a")
-            f.write(line + "\n")
-            f.close()
+            m = open(args.output, "a")
+            m.write(line + "\n")
+            m.close()
     except KeyboardInterrupt:
         exit()
     except Exception as error:
         print(line, error)
 
-urls = injecting()
-array_length = len(urls)
+injecting()
+with open('filename') as f:
+    all_urls = [line.rstrip() for line in f]
+array_length = len(all_urls)
 
 #start progress bar with calling execution functinon
 for i in tqdm(range(array_length), desc="Loading...", ascii=False, ncols=75):
     line = urls[i]
     send_request(line)
+
