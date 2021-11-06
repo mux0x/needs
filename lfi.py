@@ -3,7 +3,6 @@
 import exurl
 import requests
 from termcolor import colored
-from tqdm import tqdm
 import random
 import urllib3
 import argparse
@@ -72,7 +71,8 @@ def send_request(line):
 
 injecting()
 
-
+print(colored('                      [+] FUZZING', 'green', attrs=['bold']))
 with open('lfi_output') as f:
    for line in f:
         send_request(line)
+print(colored("                      [+] MISSION ACCOMPLISH", 'green', attrs=['bold']))
