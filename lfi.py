@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# script by mux0x
+#script by mux0x
 import exurl
 import requests
 from termcolor import colored
@@ -71,12 +71,8 @@ def send_request(line):
         print(line, error)
 
 injecting()
-with open('filename') as f:
-    all_urls = [line.rstrip() for line in f]
-array_length = len(all_urls)
 
-#start progress bar with calling execution functinon
-for i in tqdm(range(array_length), desc="Loading...", ascii=False, ncols=75):
-    line = urls[i]
-    send_request(line)
 
+with open('lfi_output') as f:
+   for line in f:
+        send_request(line)
