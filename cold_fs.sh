@@ -1,4 +1,4 @@
-or line in $(cat $1);
+for line in $(cat $1);
 do 
         echo $line | waybackurls | anew $line/urls.txt;
         echo $line | gau --threads 5 | anew $line/urls.txt
