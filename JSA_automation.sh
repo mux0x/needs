@@ -6,7 +6,7 @@ if [ -z "$1" ]; then
 fi
 mkdir -p $1
 mkdir -p $1/tmp
-tmpDir = $1/tmp
+tmpDir=$1/tmp
 stdin=$(</dev/stdin)
 
 array=()
