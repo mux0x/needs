@@ -4,7 +4,9 @@ if [ -z "$1" ]; then
     echo "Usage: $0 <output directory>"
     exit 1
 fi
-
+mkdir -p $1
+mkdir -p $1/tmp
+tmpDir = $1/tmp
 stdin=$(</dev/stdin)
 
 array=()
@@ -17,13 +19,13 @@ random_str=$(printf %s ${array[@]::23})
 
 
 printf 'Fetching js files with subjs tool..\n'
-printf $stdin | subjs | tee tmp/subjs${random_str}.txt >/dev/null
+printf $stdin | subjs | tee $tmpDirsubjs${random_str}.txt >/dev/null
 
 
 ## lauching wayback with a "js only" mode to reduce execution time
 printf 'Launching Gau with wayback..\n'
-printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:application/javascript&somevar=" | gau --providers wayback | tee tmp/gau${random_str}.txt >/dev/null   ##gau
-printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:text/javascript&somevar=" | gau --providers wayback | tee -a tmp/gau${random_str}.txt >/dev/null   ##gau
+printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:application/javascript&somevar=" | gau --providers wayback | tee $tmpDirgau${random_str}.txt >/dev/null   ##gau
+printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:text/javascript&somevar=" | gau --providers wayback | tee -a $tmpDirgau${random_str}.txt >/dev/null   ##gau
 
 
 ## if js file parsed from wayback didn't return 200 live, we are generating a URL to see a file's content on wayback's server;
@@ -31,47 +33,47 @@ printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:text/javascript&somevar=" 
 ## only wayback as of now
 
 printf "Fetching URLs for 404 js files from wayback..\n"
-cat tmp/gau${random_str}.txt | cut -d '?' -f1 | cut -d '#' -f1 | sort -u | xargs -I{} sh -c ~/Tools/JSA/automation/./404_js_wayback.sh {} | tee -a tmp/creds_search${random_str}.txt >/dev/null
+cat $tmpDirgau${random_str}.txt | cut -d '?' -f1 | cut -d '#' -f1 | sort -u | xargs -I{} sh -c ~/Tools/JSA/automation/./404_js_wayback.sh {} | tee -a $tmpDircreds_search${random_str}.txt >/dev/null
 
 
 ## Classic crawling. It could give different results than subjs tool
 printf 'Now crawling web pages..\n'
-printf $stdin | hakrawler -u -subs -insecure -d 2 | grep '\.js' | tee tmp/spider${random_str}.txt >/dev/null   ##just crawling web pages
+printf $stdin | hakrawler -u -subs -insecure -d 2 | grep '\.js' | tee $tmpDirspider${random_str}.txt >/dev/null   ##just crawling web pages
 
 
 ## Searching for URLs in github, - that could give some unique results, too
 ## python one-liner - for clear domain matching
 
 printf 'Searching for URLs in GH..\n'
-printf ${stdin} | python3 -c "import re,sys; str0=str(sys.stdin.readlines()); str1=re.search('(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]', str0);  print(str1.group(0)) if str1 is not None else exit()" | xargs -I{} python3 ~/Tools/JSA/automation/github-endpoints.py -d {} | grep '\.js' | tee tmp/gh${random_str}.txt >/dev/null
+printf ${stdin} | python3 -c "import re,sys; str0=str(sys.stdin.readlines()); str1=re.search('(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]', str0);  print(str1.group(0)) if str1 is not None else exit()" | xargs -I{} python3 ~/Tools/JSA/automation/github-endpoints.py -d {} | grep '\.js' | tee $tmpDirgh${random_str}.txt >/dev/null
     
     
 ## sorting out all the results
 
 ##that's for creds_check
 
-cat tmp/subjs${random_str}.txt tmp/gau${random_str}.txt tmp/gh${random_str}.txt tmp/spider${random_str}.txt | cut -d '?' -f1 | cut -d '#' -f1 | grep -E '\.js(?:onp?)?$' | sort -u | tee tmp/all_js_files${random_str}.txt >/dev/null 
+cat $tmpDirsubjs${random_str}.txt $tmpDirgau${random_str}.txt $tmpDirgh${random_str}.txt $tmpDirspider${random_str}.txt | cut -d '?' -f1 | cut -d '#' -f1 | grep -E '\.js(?:onp?)?$' | sort -u | tee $tmpDirall_js_files${random_str}.txt >/dev/null 
 
 ## save all endpoints to the file for future processing
 
 ## extracting js files from js files
 printf "Printing deep-level js files..\n"
-cat tmp/all_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 ~/Tools/JSA/automation/js_files_extraction.py | tee -a tmp/all_js_files${random_str}.txt"
+cat $tmpDirall_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 ~/Tools/JSA/automation/js_files_extraction.py | tee -a $tmpDirall_js_files${random_str}.txt"
 
 printf "Searching for endpoints..\n"
-cat tmp/all_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 automation/endpoints_extraction.py | tee -a tmp/all_endpoints${random_str}.txt"
-cat tmp/all_endpoints${random_str}.txt | sort -u  | anew $1/JSA_endpoints_found.txt | tee tmp/all_endpoints_unique${random_str}.txt >/dev/null
+cat $tmpDirall_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 automation/endpoints_extraction.py | tee -a $tmpDirall_endpoints${random_str}.txt"
+cat $tmpDirall_endpoints${random_str}.txt | sort -u  | anew $1/JSA_endpoints_found.txt | tee $tmpDirall_endpoints_unique${random_str}.txt >/dev/null
 
 ## credentials checking
 
 printf "Checking our js files for sweet credentials.."
-cat tmp/all_js_files${random_str}.txt tmp/creds_search${random_str}.txt | parallel --gnu -j 15 "nuclei -t ~/Tools/JSA/templates/credentials-disclosure-all.yaml -no-color -silent -target {}" | tee $1/JSA_credentials_output.txt
+cat $tmpDirall_js_files${random_str}.txt $tmpDircreds_search${random_str}.txt | parallel --gnu -j 15 "nuclei -t ~/Tools/JSA/templates/credentials-disclosure-all.yaml -no-color -silent -target {}" | tee $1/JSA_credentials_output.txt
 
 
 ## parameters bruteforcing with modified Arjun
 
 printf "Arjun parameters discovery.."
-cat tmp/all_endpoints_unique${random_str}.txt | parallel -j 15 "python3 ~/Tools/Arjun/arjun.py -f ~/Tools/Arjun/db/large.txt -t 12 --get -u {}" | tee $1/JSA_param_discovery.txt
+cat $tmpDirall_endpoints_unique${random_str}.txt | parallel -j 15 "arjun.py -f ~/Tools/Arjun/db/large.txt -t 12 --get -u {}" | tee $1/JSA_param_discovery.txt
 
 
-rm tmp/subjs${random_str}.txt tmp/gau${random_str}.txt tmp/spider${random_str}.txt tmp/gh${random_str}.txt tmp/all_js_files${random_str}.txt tmp/all_endpoints${random_str}.txt tmp/all_endpoints_unique${random_str}.txt
+rm $tmpDirsubjs${random_str}.txt $tmpDirgau${random_str}.txt $tmpDirspider${random_str}.txt $tmpDirgh${random_str}.txt $tmpDirall_js_files${random_str}.txt $tmpDirall_endpoints${random_str}.txt $tmpDirall_endpoints_unique${random_str}.txt
