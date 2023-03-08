@@ -4,9 +4,17 @@ if [ -z "$1" ]; then
     echo "Usage: $0 <output directory>"
     exit 1
 fi
+
+if [ -z "$2" ]; then
+    echo "Error: no output github token specified"
+    echo "Usage: $0 <output directory> <github token>"
+    exit 1
+fi
+
 mkdir -p $1
 mkdir -p $1/tmp
 tmpDir=$1/tmp
+ght=$2
 stdin=$(</dev/stdin)
 
 array=()
@@ -24,8 +32,8 @@ printf $stdin | subjs | tee $tmpDir/subjs${random_str}.txt >/dev/null
 
 ## lauching wayback with a "js only" mode to reduce execution time
 printf 'Launching Gau with wayback..\n'
-printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:application/javascript&somevar=" | gau --providers wayback | tee $tmpDir/gau${random_str}.txt >/dev/null   ##gau
-printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:text/javascript&somevar=" | gau --providers wayback | tee -a $tmpDir/gau${random_str}.txt >/dev/null   ##gau
+printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:application/javascript&somevar=" | gau --providers wayback --threads 5 | tee $tmpDir/gau${random_str}.txt >/dev/null   ##gau
+printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:text/javascript&somevar=" | gau --providers wayback --threads 5 | tee -a $tmpDir/gau${random_str}.txt >/dev/null   ##gau
 
 
 ## if js file parsed from wayback didn't return 200 live, we are generating a URL to see a file's content on wayback's server;
@@ -33,19 +41,20 @@ printf $stdin | xargs -I{} echo "{}/*&filter=mimetype:text/javascript&somevar=" 
 ## only wayback as of now
 
 printf "Fetching URLs for 404 js files from wayback..\n"
-cat $tmpDir/gau${random_str}.txt | cut -d '?' -f1 | cut -d '#' -f1 | sort -u | xargs -I{} sh -c ~/Tools/JSA/automation/./404_js_wayback.sh {} | tee -a $tmpDir/creds_search${random_str}.txt >/dev/null
+cat $tmpDir/gau${random_str}.txt | cut -d '?' -f1 | cut -d '#' -f1 | sort -u | xargs -I{} sh -c ~/Tools/JSA/automation/./404_js_wayback.sh {} | anew $1/JSA | tee -a $tmpDir/creds_search${random_str}.txt >/dev/null
 
 
 ## Classic crawling. It could give different results than subjs tool
 printf 'Now crawling web pages..\n'
 printf $stdin | hakrawler -u -subs -insecure -d 2 | grep '\.js' | tee $tmpDir/spider${random_str}.txt >/dev/null   ##just crawling web pages
+katana -u $stdin -d 5 -hl -nos -jc -silent -aff -kf all,robotstxt,sitemapxml -c 150 -fs fqdn | grep '\.js' | tee $tmpDir/spider${random_str}.txt >/dev/null   ##just crawling web pages
 
 
 ## Searching for URLs in github, - that could give some unique results, too
 ## python one-liner - for clear domain matching
 
 printf 'Searching for URLs in GH..\n'
-printf ${stdin} | python3 -c "import re,sys; str0=str(sys.stdin.readlines()); str1=re.search('(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]', str0);  print(str1.group(0)) if str1 is not None else exit()" | xargs -I{} python3 ~/Tools/JSA/automation/github-endpoints.py -d {} | grep '\.js' | tee $tmpDir/gh${random_str}.txt >/dev/null
+printf ${stdin} | python3 -c "import re,sys; str0=str(sys.stdin.readlines()); str1=re.search('(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]', str0);  print(str1.group(0)) if str1 is not None else exit()" | xargs -I{} python3 ~/Tools/JSA/automation/github-endpoints.py -d {} -t $ght | grep '\.js' | tee $tmpDir/gh${random_str}.txt >/dev/null
     
     
 ## sorting out all the results
@@ -61,19 +70,20 @@ printf "Printing deep-level js files..\n"
 cat $tmpDir/all_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 ~/Tools/JSA/automation/js_files_extraction.py | tee -a $tmpDir/all_js_files${random_str}.txt"
 
 printf "Searching for endpoints..\n"
-cat $tmpDir/all_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 automation/endpoints_extraction.py | tee -a $tmpDir/all_endpoints${random_str}.txt"
-cat $tmpDir/all_endpoints${random_str}.txt | sort -u  | anew $1/JSA_endpoints_found.txt | tee $tmpDir/all_endpoints_unique${random_str}.txt >/dev/null
+cat $tmpDir/all_js_files${random_str}.txt | parallel --gnu --pipe -j 15 "python3 ~/Tools/JSA/automation/endpoints_extraction.py | tee -a $tmpDir/all_endpoints${random_str}.txt"
+cat $tmpDir/all_endpoints${random_str}.txt | sort -u  | anew $1/JSA.log | tee $tmpDir/all_endpoints_unique${random_str}.txt >/dev/null
+
 
 ## credentials checking
 
 printf "Checking our js files for sweet credentials.."
-cat $tmpDir/all_js_files${random_str}.txt $tmpDir/creds_search${random_str}.txt | parallel --gnu -j 15 "nuclei -t ~/Tools/JSA/templates/credentials-disclosure-all.yaml -no-color -silent -target {}" | tee $1/JSA_credentials_output.txt
+cat $tmpDir/all_js_files${random_str}.txt $tmpDir/creds_search${random_str}.txt | parallel --gnu -j 15 "nuclei -t ~/Tools/JSA/templates/credentials-disclosure-all.yaml -no-color -silent -target {}" | tee $1/JSA.log >/dev/null
 
 
 ## parameters bruteforcing with modified Arjun
 
 printf "Arjun parameters discovery.."
-cat $tmpDir/all_endpoints_unique${random_str}.txt | parallel -j 15 "arjun.py -f ~/Tools/Arjun/db/large.txt -t 12 --get -u {}" | tee $1/JSA_param_discovery.txt
+cat $tmpDir/all_endpoints_unique${random_str}.txt | parallel -j 15 "arjun -w ~/Tools/Arjun/db/large.txt -t 12 -m GET -u {} -o $1/../bruted-params.json" | tee $1/JSA.log 
 
 
 rm $tmpDir/subjs${random_str}.txt $tmpDir/gau${random_str}.txt $tmpDir/spider${random_str}.txt $tmpDir/gh${random_str}.txt $tmpDir/all_js_files${random_str}.txt $tmpDir/all_endpoints${random_str}.txt $tmpDir/all_endpoints_unique${random_str}.txt
