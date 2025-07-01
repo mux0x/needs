@@ -50,10 +50,17 @@ NUCLEI_IMAGE="nuclei-with-time"
 nuclei_run () {
   local list="$1" stats="$2" out="$3" thr="$4" mem="$5"
 
+  # --- make paths absolute and guarantee that the output file exists ----
+  list=$(realpath "$list")
+  mkdir -p "$(dirname "$out")"   # parent dir definitely exists
+  : > "$out"                     # create/truncate the file
+  out=$(realpath "$out")
+  # ----------------------------------------------------------------------
+
   /usr/bin/docker run --rm --network host \
         --memory "$mem" --memory-swap "$mem" \
-        -v "$(realpath "$list")":/data/targets.txt:ro \
-        -v "$(realpath "$out")":/data/out.txt \
+        -v "$list":/data/targets.txt:ro \
+        -v "$out":/data/out.txt \
         -v "$(realpath "$TEMPLATES")":/templates:ro \
         "$NUCLEI_IMAGE" \
           -l /data/targets.txt \
@@ -61,7 +68,6 @@ nuclei_run () {
           -o /data/out.txt \
           -c "$thr" -rate-limit "$RATE_LIMIT" -ep \
           2> "$stats"
-  
 }
 
 ###############################################################################
