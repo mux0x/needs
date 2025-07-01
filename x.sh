@@ -61,7 +61,7 @@ nuclei_run () {
           -templates /templates \
           -o /data/out.txt \
           -c "$thr" -rate-limit "$RATE_LIMIT" -ep \
-          2> "/bench/$(basename "$stats")"
+          2> "$OUT_DIR/$(basename "$stats")"
 }
 
 ###############################################################################
