@@ -59,7 +59,7 @@ nuclei_run () {
   # ----------------------------------------------------------------------
 
   /usr/bin/docker run --rm --network host \
-        --memory "$mem" --memory-swap "$mem" \
+        --memory "$mem" --memory-swap "$mem" --cpus=2 \
         -v "$list":/data/targets.txt:ro \
         -v "$out":/data/out.txt \
         -v "$(realpath "$TEMPLATES")":/templates:ro \
