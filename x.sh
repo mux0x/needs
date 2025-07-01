@@ -55,13 +55,13 @@ nuclei_run () {
         -v "$(realpath "$list")":/data/targets.txt:ro \
         -v "$(realpath "$out")":/data/out.txt \
         -v "$(realpath "$TEMPLATES")":/templates:ro \
-        -v "$(dirname "$(realpath "$stats")")":/bench \
         "$NUCLEI_IMAGE" \
           -l /data/targets.txt \
           -templates /templates \
           -o /data/out.txt \
           -c "$thr" -rate-limit "$RATE_LIMIT" -ep \
-          2> "$OUT_DIR/$(basename "$stats")"
+          2> "$stats"
+  
 }
 
 ###############################################################################
