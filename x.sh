@@ -22,7 +22,7 @@ MEM_LIMIT_PARALLEL="${MEM_LIMIT_PARALLEL:-4g}"  # docker --memory for each 35‑
 MAX_REQ_PER_HOUR="${MAX_REQ_PER_HOUR:-3600000}"        # requests / h budget
 RATE_LIMIT="$(( MAX_REQ_PER_HOUR / 3600 ))"             # nuclei -rate-limit value
 
-BS_M=25
+BS_M=50
 
 ###############################################################################
 
@@ -66,7 +66,7 @@ nuclei_run () {
         "$NUCLEI_IMAGE" \
           -l /data/targets.txt \
           -templates /templates \
-          -o /data/out.txt -ss host-spray -bs $bs \
+          -o /data/out.txt -bs $bs \
           -c "$thr" -rate-limit "$RATE_LIMIT" -ep \
           2> "$stats"
 }
