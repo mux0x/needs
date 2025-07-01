@@ -22,7 +22,7 @@ MEM_LIMIT_PARALLEL="${MEM_LIMIT_PARALLEL:-4g}"  # docker --memory for each 35‑
 MAX_REQ_PER_HOUR="${MAX_REQ_PER_HOUR:-3600000}"        # requests / h budget
 RATE_LIMIT="$(( MAX_REQ_PER_HOUR / 3600 ))"             # nuclei -rate-limit value
 
-BS_SIGNLE="70"
+# BS_SIGNLE="90"
 BS_Multi="35"
 ###############################################################################
 
@@ -65,7 +65,7 @@ nuclei_run () {
         -v "$(realpath "$TEMPLATES")":/templates:ro \
         "$NUCLEI_IMAGE" \
           -l /data/targets.txt \
-          -templates /templates \
+          -templates /templates -ss host-spray \
           -o /data/out.txt \
           -c "$thr" -rate-limit "$RATE_LIMIT" -ep -bs $bs \
           2> "$stats"
@@ -118,31 +118,5 @@ rammax_parallel=$(( rmax1 > rmax2 ? rmax1 : rmax2 ))
 printf "parallel,%s,%s,%s,%s,%s\n" \
        "$total_hosts" "$elapsed_parallel" "$cpu_parallel" \
        "$ramavg_parallel" "$rammax_parallel" >> "$SUMMARY_CSV"
-
-###############################################################################
-# 2 — full‑file single‑container scan (70 threads, 6 GiB cap) –– SECOND #######
-###############################################################################
-
-echo -e "\n▶️  [2/2] Single‑container scan for $total_hosts hosts"
-list_all="$OUT_DIR/tmp_all.txt"; cp "$ALL_TARGETS" "$list_all"
-stats_single="$OUT_DIR/stats_single.txt"
-proj_single=$(mktemp -d -t nucleiS.XXXX)
-out_single="$OUT_DIR/results_single.txt"
-
-nuclei_run "$list_all" "$stats_single" "$out_single" \
-            "$THREADS_SINGLE" "$MEM_LIMIT_SINGLE" $BS_SIGNLE
-
-elapsed=$(hms_to_sec "$(extract 'Elapsed (wall clock) time' "$stats_single")")
-cpu_pct=$(strip_pct "$(extract 'Percent of CPU this job got' "$stats_single")")
-ram_avg=$(extract 'Average resident set size' "$stats_single")
-ram_peak=$(extract 'Maximum resident set size' "$stats_single")
-
-printf "single,%s,%s,%s,%s,%s\n" \
-       "$total_hosts" "$elapsed" "$cpu_pct" "$ram_avg" "$ram_peak" >> "$SUMMARY_CSV"
-
-###############################################################################
-# cleanup #####################################################################
-###############################################################################
-rm -rf "$proj_single" "$proj1" "$proj2"
 
 echo -e "\n✅  Finished. Summary in $SUMMARY_CSV (directory: $OUT_DIR)"
