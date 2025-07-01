@@ -13,7 +13,7 @@ TEMPLATES="${TEMPLATES:-$HOME/nuclei-templates}"     # template repo path
 
 # ── fixed thread counts per requirements ─────────────────────────────────────
 THREADS_SINGLE="70"          # single scan
-THREADS_PARALLEL="45"        # per‑container in the parallel phase
+THREADS_PARALLEL="50"        # per‑container in the parallel phase
 
 # ── resource & traffic caps ─────────────────────────────────────────────────-
 MEM_LIMIT_SINGLE="${MEM_LIMIT_SINGLE:-6g}"      # docker --memory for the 70‑thread run
@@ -22,7 +22,7 @@ MEM_LIMIT_PARALLEL="${MEM_LIMIT_PARALLEL:-4g}"  # docker --memory for each 35‑
 MAX_REQ_PER_HOUR="${MAX_REQ_PER_HOUR:-3600000}"        # requests / h budget
 RATE_LIMIT="$(( MAX_REQ_PER_HOUR / 3600 ))"             # nuclei -rate-limit value
 
-BS_M=40
+BS_M=50
 
 ###############################################################################
 
