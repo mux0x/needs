@@ -22,7 +22,8 @@ MEM_LIMIT_PARALLEL="${MEM_LIMIT_PARALLEL:-4g}"  # docker --memory for each 35‑
 MAX_REQ_PER_HOUR="${MAX_REQ_PER_HOUR:-3600000}"        # requests / h budget
 RATE_LIMIT="$(( MAX_REQ_PER_HOUR / 3600 ))"             # nuclei -rate-limit value
 
-
+BS_SIGNLE="70"
+BS_Multi="35"
 ###############################################################################
 
 mkdir -p "$OUT_DIR"
@@ -48,7 +49,7 @@ strip_pct () { tr -d '%' <<< "$1"; }
 NUCLEI_IMAGE="nuclei-with-time"
 
 nuclei_run () {
-  local list="$1" stats="$2" out="$3" thr="$4" mem="$5"
+  local list="$1" stats="$2" out="$3" thr="$4" mem="$5" bs="$6"
 
   # --- make paths absolute and guarantee that the output file exists ----
   list=$(realpath "$list")
@@ -66,7 +67,7 @@ nuclei_run () {
           -l /data/targets.txt \
           -templates /templates \
           -o /data/out.txt \
-          -c "$thr" -rate-limit "$RATE_LIMIT" -ep \
+          -c "$thr" -rate-limit "$RATE_LIMIT" -ep -bs $bs \
           2> "$stats"
 }
 
@@ -91,10 +92,10 @@ proj1=$(mktemp -d -t nuclei1.XXXX); proj2=$(mktemp -d -t nuclei2.XXXX)
 echo -e "\n▶️  [1/2] Two Docker scans in parallel ($half + $(( total_hosts - half )) hosts)"
 
 nuclei_run "$list1" "$stats1" "$out1" \
-           "$THREADS_PARALLEL" "$MEM_LIMIT_PARALLEL" & pid1=$!
+           "$THREADS_PARALLEL" "$MEM_LIMIT_PARALLEL" $BS_Multi & pid1=$!
 
 nuclei_run "$list2" "$stats2" "$out2" \
-           "$THREADS_PARALLEL" "$MEM_LIMIT_PARALLEL" & pid2=$!
+           "$THREADS_PARALLEL" "$MEM_LIMIT_PARALLEL" $BS_Multi & pid2=$!
 
 wait $pid1 $pid2
 
@@ -129,7 +130,7 @@ proj_single=$(mktemp -d -t nucleiS.XXXX)
 out_single="$OUT_DIR/results_single.txt"
 
 nuclei_run "$list_all" "$stats_single" "$out_single" \
-            "$THREADS_SINGLE" "$MEM_LIMIT_SINGLE"
+            "$THREADS_SINGLE" "$MEM_LIMIT_SINGLE" $BS_SIGNLE
 
 elapsed=$(hms_to_sec "$(extract 'Elapsed (wall clock) time' "$stats_single")")
 cpu_pct=$(strip_pct "$(extract 'Percent of CPU this job got' "$stats_single")")
