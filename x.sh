@@ -13,7 +13,7 @@ TEMPLATES="${TEMPLATES:-$HOME/nuclei-templates}"     # template repo path
 
 # ── fixed thread counts per requirements ─────────────────────────────────────
 THREADS_SINGLE="70"          # single scan
-THREADS_PARALLEL="35"        # per‑container in the parallel phase
+THREADS_PARALLEL="45"        # per‑container in the parallel phase
 
 # ── resource & traffic caps ─────────────────────────────────────────────────-
 MEM_LIMIT_SINGLE="${MEM_LIMIT_SINGLE:-6g}"      # docker --memory for the 70‑thread run
@@ -66,7 +66,7 @@ nuclei_run () {
         "$NUCLEI_IMAGE" \
           -l /data/targets.txt \
           -templates /templates \
-          -o /data/out.txt -bs $bs \
+          -o /data/out.txt -ss host-spray -bs $bs \
           -c "$thr" -rate-limit "$RATE_LIMIT" -ep \
           2> "$stats"
 }
